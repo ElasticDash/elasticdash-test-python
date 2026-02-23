@@ -108,13 +108,19 @@ _INDEX_HTML = """<!doctype html>
     .fail { color: #ff8c8c; }
     .pending { color: #f1fa8c; }
     .header { font-size: 18px; margin-bottom: 8px; }
+    .muted { color: #9aa7c2; }
+    .summary { margin-top: 12px; }
   </style>
 </head>
 <body>
   <div class="header">elasticdash test run</div>
+  <div id="status" class="muted">connecting...</div>
+  <div id="summary" class="summary muted"></div>
   <div id="list"></div>
   <script>
     const list = document.getElementById('list');
+    const statusEl = document.getElementById('status');
+    const summaryEl = document.getElementById('summary');
     const state = new Map();
 
     function render() {
@@ -132,13 +138,26 @@ _INDEX_HTML = """<!doctype html>
     }
 
     const es = new EventSource('/events');
+    es.onopen = () => {
+      statusEl.textContent = 'connected to runner';
+    };
+    es.onerror = () => {
+      statusEl.textContent = 'connection lost (server closed?)';
+    };
     es.onmessage = (msg) => {
       try {
         const event = JSON.parse(msg.data);
+        if (event.type === 'run-start') {
+          statusEl.textContent = `running ${event.payload.files.length} file(s)...`;
+        }
         if (event.type === 'test-finish') {
           const key = `${event.payload.file}:${event.payload.name}`;
           state.set(key, event.payload);
           render();
+        }
+        if (event.type === 'run-summary') {
+          const p = event.payload;
+          summaryEl.textContent = `passed ${p.passed} / ${p.total}  |  failed ${p.failed}  |  errors ${p.errored}`;
         }
       } catch (e) { console.error(e); }
     };

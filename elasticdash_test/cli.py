@@ -42,6 +42,28 @@ def _should_enable_browser_ui(flag: bool) -> bool:
     return flag
 
 
+def _summarize_results(file_results):
+    total = 0
+    passed = 0
+    failed = 0
+    errored = 0
+    for fr in file_results:
+        if fr.before_all_error:
+            errored += 1
+            continue
+        for t in fr.tests:
+            total += 1
+            if t.status == "passed":
+                passed += 1
+            elif t.status == "failed":
+                failed += 1
+            else:
+                errored += 1
+        if fr.after_all_error:
+            errored += 1
+    return {"total": total, "passed": passed, "failed": failed, "errored": errored}
+
+
 @click.group()
 def main():
     """elasticdash test runner"""
@@ -95,7 +117,7 @@ def test_cmd(path: str, no_browser_ui: bool, browser_ui_port: int, browser_ui_ke
                         }
                     )
         if server:
-            server.send({"type": "run-summary", "payload": {"results": len(results)}})
+            server.send({"type": "run-summary", "payload": _summarize_results(results)})
             if browser_ui_keep_open > 0:
                 await asyncio.sleep(browser_ui_keep_open)
             server.close()
@@ -142,7 +164,7 @@ def run_single(file: str, no_browser_ui: bool, browser_ui_port: int, browser_ui_
                         },
                     }
                 )
-            server.send({"type": "run-summary", "payload": {"results": 1}})
+            server.send({"type": "run-summary", "payload": _summarize_results([result])})
             if browser_ui_keep_open > 0:
                 await asyncio.sleep(browser_ui_keep_open)
             server.close()
