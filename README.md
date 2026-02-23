@@ -5,7 +5,7 @@ Python port of the Elasticdash AI test framework.
 ## Install
 
 ```
-pip install -e .
+pip install elasticdash-test
 ```
 
 ## Usage
