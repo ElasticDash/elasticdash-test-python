@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "elasticdash-test"
-version = "0.1.0"
+name = "elasticdash_test"
+version = "0.1.2a2"
 description = "Elasticdash AI test framework for Python"
 authors = [{ name = "Elasticdash", email = "contact@elasticdash.com" }]
 readme = "README.md"

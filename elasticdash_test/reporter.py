@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import shutil
+import traceback
 from typing import List
 
 from .runner import FileResult, TestResult
@@ -54,8 +55,7 @@ def print_results(results: List[FileResult]):
             name = f"{mark} {test.name} ({test.duration:.2f}s)"
             print(name)
             if test.error:
-                msg = str(test.error)
-                for line in msg.splitlines():
+                for line in _format_error(test.error).splitlines():
                     print("    → " + line)
         if file_result.after_all_error:
             print(_c(f"✗ {file_result.file} after_all failed: {file_result.after_all_error}", _RED))
@@ -69,3 +69,22 @@ def print_results(results: List[FileResult]):
     summary = [s for s in summary if s]
     print(" ".join(summary))
     print(f"Total: {total_tests}")
+
+
+def _format_error(err: BaseException) -> str:
+    try:
+        tb = traceback.TracebackException.from_exception(err)
+        parts = []
+        if tb.stack:
+            last = tb.stack[-1]
+            parts.append(f"{last.filename}:{last.lineno} in {last.name}")
+        parts.extend(tb.format_exception_only())
+        rendered = "\n".join([p.rstrip() for p in parts if p]).strip()
+        if rendered:
+            return rendered
+    except Exception:
+        pass
+    # Fallback to a simple name/message pair if formatting failed or message was empty.
+    name = err.__class__.__name__
+    message = str(err)
+    return f"{name}: {message}" if message else name

@@ -138,7 +138,11 @@ class Expectation:
                 raise AssertionError(f"Prompt index {index} out of range")
             step = steps[index]
             if not matches(step):
-                raise AssertionError("Prompt at requested index did not match filter")
+                raise AssertionError(
+                    f"Prompt at index {index} did not match filter; "
+                    f"expected filter={_describe_filter(filter_contains, require_contains, require_not_contains)}, "
+                    f"got prompt={step.prompt!r}"
+                )
             return trace
 
         _assert_count("prompt", steps, matches, times, min_times, max_times)
@@ -232,7 +236,8 @@ def _assert_count(
     if max_times is not None and count > max_times:
         raise AssertionError(f"Expected {label} at most {max_times} time(s); observed {count}")
     if times is None and min_times is None and max_times is None and count == 0:
-        raise AssertionError(f"Expected {label} but none recorded")
+        samples = items if isinstance(items, list) else list(items)
+        raise AssertionError(f"Expected {label} but none recorded; observed={_format_sample(samples)}")
 
 
 def _latest_completion(trace: TraceHandle, index: Optional[int] = None, nth: Optional[int] = None) -> str:
@@ -250,6 +255,25 @@ def _latest_completion(trace: TraceHandle, index: Optional[int] = None, nth: Opt
 
 def _openai_headers(api_key: str) -> dict:
     return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+
+def _describe_filter(filter_contains: Optional[str], require_contains: Optional[str], require_not_contains: Optional[str]) -> str:
+    parts = []
+    if filter_contains:
+        parts.append(f"filter_contains={filter_contains!r}")
+    if require_contains:
+        parts.append(f"require_contains={require_contains!r}")
+    if require_not_contains:
+        parts.append(f"require_not_contains={require_not_contains!r}")
+    return ", ".join(parts) or "<no filter>"
+
+
+def _format_sample(items: list[Any], limit: int = 3) -> str:
+    if not items:
+        return "[]"
+    shown = items[:limit]
+    extra = "" if len(items) <= limit else f", ... ({len(items) - limit} more)"
+    return f"[{', '.join(repr(x) for x in shown)}{extra}]"
 
 
 async def _semantic_match(

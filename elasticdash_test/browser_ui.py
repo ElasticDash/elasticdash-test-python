@@ -44,25 +44,36 @@ class BrowserUIServer:
             await response.write(_format_sse(event))
 
         try:
-            while True:
-                event = await queue.get()
-                await response.write(_format_sse(event))
+          while True:
+            event = await queue.get()
+            if event is None:
+              break
+            await response.write(_format_sse(event))
         except asyncio.CancelledError:
-            pass
+          pass
+        except Exception:
+          # Swallow shutdown noise
+          pass
         finally:
+          if queue in self.queues:
             self.queues.remove(queue)
+          try:
             await response.write_eof()
+          except Exception:
+            pass
         return response
 
     async def _index(self, request: web.Request):
         return web.Response(text=_INDEX_HTML, content_type="text/html")
 
-    def close(self):
-        async def _shutdown():
-            await self.site.stop()
-            await self.runner.cleanup()
-
-        asyncio.create_task(_shutdown())
+    async def close(self):
+      for q in list(self.queues):
+        try:
+          q.put_nowait(None)
+        except Exception:
+          pass
+      await self.site.stop()
+      await self.runner.cleanup()
 
 
 async def start_browser_ui_server(port: int = 4571, auto_open: bool = True) -> BrowserUIServer:
@@ -110,6 +121,8 @@ _INDEX_HTML = """<!doctype html>
     .header { font-size: 18px; margin-bottom: 8px; }
     .muted { color: #9aa7c2; }
     .summary { margin-top: 12px; }
+    .error-toggle { margin-top: 8px; background: #1f2a4d; color: #e6ecff; border: 1px solid #2b3a63; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    .error-box { margin-top: 8px; background: #0e162c; border: 1px solid #2b3a63; border-radius: 6px; padding: 8px; max-height: 400px; overflow: auto; white-space: pre-wrap; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 12px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -122,6 +135,7 @@ _INDEX_HTML = """<!doctype html>
     const statusEl = document.getElementById('status');
     const summaryEl = document.getElementById('summary');
     const state = new Map();
+    const expanded = new Set();
 
     function render() {
       list.innerHTML = '';
@@ -129,10 +143,33 @@ _INDEX_HTML = """<!doctype html>
         const div = document.createElement('div');
         div.className = 'card';
         const statusClass = value.status === 'passed' ? 'pass' : value.status === 'failed' ? 'fail' : 'pending';
-        div.innerHTML = `<div><strong>${value.name}</strong></div>` +
+        const top = document.createElement('div');
+        top.innerHTML = `<div><strong>${value.name}</strong></div>` +
           `<div class="${statusClass}">${value.status}</div>` +
-          `<div>${value.duration ? value.duration.toFixed(2) + 's' : ''}</div>` +
-          (value.error ? `<div>${value.error}</div>` : '');
+          `<div>${value.duration ? value.duration.toFixed(2) + 's' : ''}</div>`;
+        div.appendChild(top);
+
+        if (value.error) {
+          const btn = document.createElement('button');
+          btn.className = 'error-toggle';
+          btn.textContent = expanded.has(key) ? 'Hide details' : 'Show details';
+          btn.onclick = () => {
+            if (expanded.has(key)) {
+              expanded.delete(key);
+            } else {
+              expanded.add(key);
+            }
+            render();
+          };
+          div.appendChild(btn);
+
+          if (expanded.has(key)) {
+            const err = document.createElement('div');
+            err.className = 'error-box';
+            err.textContent = value.error;
+            div.appendChild(err);
+          }
+        }
         list.appendChild(div);
       }
     }

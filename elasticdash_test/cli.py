@@ -120,7 +120,7 @@ def test_cmd(path: str, no_browser_ui: bool, browser_ui_port: int, browser_ui_ke
             server.send({"type": "run-summary", "payload": _summarize_results(results)})
             if browser_ui_keep_open > 0:
                 await asyncio.sleep(browser_ui_keep_open)
-            server.close()
+            await server.close()
         print_results(results)
 
     asyncio.run(_run())
@@ -167,7 +167,7 @@ def run_single(file: str, no_browser_ui: bool, browser_ui_port: int, browser_ui_
             server.send({"type": "run-summary", "payload": _summarize_results([result])})
             if browser_ui_keep_open > 0:
                 await asyncio.sleep(browser_ui_keep_open)
-            server.close()
+            await server.close()
         print_results([result])
 
     asyncio.run(_run())
