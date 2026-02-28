@@ -334,7 +334,74 @@ config = {
 | `test_match` | `['**/*.ai_test.py']` | Glob patterns for test discovery |
 | `trace_mode` | `'local'` | `'local'` (stub) or `'remote'` (future ElasticDash backend) |
 
----
+### `ed_agents.py`, `ed_workflows.py`, `ed_tools.py`
+
+These optional files are thin wrappers that bundle and re-export existing functions from your codebase. Load them automatically during test runs to provide agents, workflows, and tools to your test environment.
+
+#### `ed_agents.py`
+
+Re-export agent functions or create a config dict for easy reference:
+
+```python
+# ed_agents.py — import from your app
+from my_app.agents import checkout_agent, payment_agent
+
+config = {
+    "checkout": checkout_agent,
+    "payment": payment_agent,
+}
+```
+
+Access in tests:
+
+```python
+@ai_test("checkout flow")
+async def test_checkout(ctx, config):
+    agents = config.get("agents", {})
+    result = await agents["checkout"]("order-123")
+```
+
+#### `ed_workflows.py`
+
+Re-export workflow functions from your application:
+
+```python
+# ed_workflows.py
+from my_app.workflows import order_workflow, refund_workflow
+
+# Re-export directly — the runner will import this module
+```
+
+Access in tests:
+
+```python
+@ai_test("full order workflow")
+async def test_workflow(ctx):
+    from ed_workflows import order_workflow
+    result = await order_workflow("order-123", "cust-456")
+    expect(ctx.trace).to_call_tool("chargeCard")
+```
+
+#### `ed_tools.py`
+
+Re-export tool functions that agents or workflows can invoke:
+
+```python
+# ed_tools.py
+from my_app.tools import charge_card, fetch_order_status, send_notification
+```
+
+Access in tests or workflows:
+
+```python
+@ai_test("tool integration")
+async def test_tools(ctx):
+    from ed_tools import fetch_order_status
+    status = await fetch_order_status("order-123")
+    expect(ctx.trace).to_have_custom_step(kind="external", name="fetch_order_status")
+```
+
+These files are loaded automatically if present in the project root.
 
 ## Project Structure
 

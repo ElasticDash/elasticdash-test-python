@@ -18,15 +18,45 @@ DEFAULT_MATCH = ["**/*.ai_test.py"]
 
 
 def _load_config(cwd: Path) -> Dict:
+    config = {}
+    
+    # Load main config
     config_path = cwd / "elasticdash.config.py"
-    if not config_path.exists():
-        return {}
-    spec = importlib.util.spec_from_file_location("elasticdash_config", config_path)
-    if spec is None or spec.loader is None:
-        return {}
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)  # type: ignore[arg-type]
-    return getattr(module, "config", {}) or {}
+    if config_path.exists():
+        spec = importlib.util.spec_from_file_location("elasticdash_config", config_path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            config.update(getattr(module, "config", {}))
+    
+    # Load ed_agents config
+    agents_path = cwd / "ed_agents.py"
+    if agents_path.exists():
+        spec = importlib.util.spec_from_file_location("ed_agents", agents_path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            config["agents"] = getattr(module, "config", {})
+    
+    # Import ed_workflows module
+    workflows_path = cwd / "ed_workflows.py"
+    if workflows_path.exists():
+        spec = importlib.util.spec_from_file_location("ed_workflows", workflows_path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            config["workflows_module"] = module
+    
+    # Import ed_tools module
+    tools_path = cwd / "ed_tools.py"
+    if tools_path.exists():
+        spec = importlib.util.spec_from_file_location("ed_tools", tools_path)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            config["tools_module"] = module
+    
+    return config
 
 
 def _discover_files(root: Path, patterns: List[str]) -> List[str]:

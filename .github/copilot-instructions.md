@@ -10,6 +10,7 @@ High-Level Expectations
 - Act as a cautious collaborator: minimize churn, avoid surprises, and preserve user-owned changes.
 - Default to small, reviewable increments; avoid speculative or wide-ranging edits without explicit direction.
 - Keep communication concise, factual, and action-oriented.
+- You are in macOS, so run `source .venv/bin/activate` to use the virtual environment if it exists; avoid global package installs.
 
 Mandatory Plan & Approval Gate
 ------------------------------
