@@ -41,6 +41,7 @@ async def test_checkout(ctx):
 elasticdash test              # discover all *.ai_test.py files
 elasticdash test ./ai_tests   # discover in a specific directory
 elasticdash run my_flow.ai_test.py  # run a single file
+elasticdash dashboard         # open workflows dashboard
 ```
 
 **3. Read the output:**
@@ -402,6 +403,30 @@ async def test_tools(ctx):
 ```
 
 These files are loaded automatically if present in the project root.
+
+## Workflows Dashboard
+
+Browse and search all available workflow functions in your project:
+
+```bash
+elasticdash dashboard         # open dashboard at http://localhost:4573
+elasticdash dashboard --port 4572  # use custom port
+elasticdash dashboard --no-open    # skip auto-opening browser
+```
+
+The dashboard scans `ed_workflows.py` and displays:
+- **Function names** — all callable functions in the module
+- **Signatures** — function parameters and return types
+- **Async indicator** — marks async vs sync functions
+- **Source module** — where the function is imported from (if not locally defined)
+- **File path** — location of `ed_workflows.py`
+
+Use the search field to filter workflows by:
+- **Name** — find workflow by function name (e.g., `checkout_flow`)
+- **Source module** — find all workflows from a specific module (e.g., `app_workflows`)
+- **File path** — filter by location in your codebase
+
+This is useful for discovering available workflows, understanding their signatures, and identifying where functions are defined before calling them in tests.
 
 ## Project Structure
 

@@ -203,5 +203,27 @@ def run_single(file: str, no_browser_ui: bool, browser_ui_port: int, browser_ui_
     asyncio.run(_run())
 
 
+@main.command(name="dashboard")
+@click.option("--port", default=4573, help="Dashboard port")
+@click.option("--no-open", is_flag=True, help="Don't auto-open browser")
+def dashboard_cmd(port: int, no_open: bool):
+    """Open workflows dashboard."""
+    cwd = Path.cwd()
+    
+    async def _run():
+        from .dashboard import start_dashboard_server
+        
+        runner = await start_dashboard_server(cwd, port=port, auto_open=not no_open)
+        try:
+            # Keep server running until interrupted
+            await asyncio.Event().wait()
+        except KeyboardInterrupt:
+            print("\nShutting down dashboard...")
+        finally:
+            await runner.cleanup()
+    
+    asyncio.run(_run())
+
+
 if __name__ == "__main__":
     main()
