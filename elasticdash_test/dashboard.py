@@ -145,7 +145,7 @@ def _get_dashboard_html() -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ElasticDash Workflows</title>
+    <title>ElasticDash Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -293,7 +293,7 @@ def _get_dashboard_html() -> str:
 <body>
     <div class="container">
         <header>
-            <h1>ElasticDash Workflows</h1>
+            <h1>Select Workflow Function to be Fixed</h1>
             <div class="search-box">
                 <input 
                     type="text" 
